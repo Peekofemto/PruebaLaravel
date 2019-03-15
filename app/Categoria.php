@@ -11,7 +11,7 @@ class Categoria extends Model
     //que la tabla se llama igual que este archivo
     //Es por eso que dejaré comentado lo de abajo
     //protected $table = 'categorias';
-    //lo mismo pasad con el primary key
+    //lo mismo pasa con el primary key
     //protected $primaryKey = 'id';
     //php artisan make:model categoria
 
