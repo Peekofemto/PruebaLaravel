@@ -104,7 +104,7 @@
                                 <label class="col-md-3 form-control-label" for="text-input">Nombre</label>
                                 <div class="col-md-9">
                                     <input type="text" v-model="nombre" class="form-control" placeholder="Nombre de categoría">
-                                    <span class="help-block">(*) Ingrese el nombre de la categoría</span>
+                                    
                                 </div>
                             </div>
                             <div class="form-group row">
@@ -113,12 +113,17 @@
                                     <input type="email" v-model="descripcion" class="form-control" placeholder="Ingrese descripción">
                                 </div>
                             </div>
+                            <div v-show="errorCategoria" class="form-group row div-error">
+                                <div class="text-center text-error">
+                                    <div v-for="error in errorMostrarMsjCategoria" :key="error" v-text="error"></div>
+                                </div>
+                            </div>
                         </form>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" @click="cerrarModal()">Cerrar</button>
                         <button type="button" v-if="tipoAccion==1" class="btn btn-primary" @click="registrarCategoria()">Guardar</button>
-                        <button type="button" v-if="tipoAccion==2" class="btn btn-primary">Actualizar</button>
+                        <button type="button" v-if="tipoAccion==2" class="btn btn-primary" @click="actualizarCategoria()">Actualizar</button>
                     </div>
                 </div>
                 <!-- /.modal-content -->
@@ -157,17 +162,21 @@
     export default {
         data (){
             return{
+                categoria_id: 0,
                 nombre : '',
                 descripcion : '',
                 arrayCategoria : [],
                 modal : 0,
                 tituloModal : '',
-                tipoAccion : 0
+                tipoAccion : 0,
+                errorCategoria : 0,
+                errorMostrarMsjCategoria : []
             }
         },
         methods : {
             //'categoria' es la route que nos regresa las categorias
             listarCategoria (){
+
                 let me = this;
                 axios.get('/categoria').then(function (response) {
                     // handle success
@@ -179,7 +188,16 @@
                     console.log(error);
                 });
             },
+
+
+
+
             registrarCategoria(){
+
+                if(this.validarCategoria()){
+                    return;
+                }
+
                 let me = this;
                 //esta ruta hace referencia a la funcion store del CategoriaController
                 axios.post('/categoria/registrar',{
@@ -190,16 +208,57 @@
                     me.listarCategoria();
                 }).catch(function(error){
                     console.log(error);
-                });
-
-                
+                });           
             },
+
+
+
+
+            actualizarCategoria(){
+
+               if (this.validarCategoria()){
+                    return;
+                }
+                
+                let me = this;
+
+                axios.put('/categoria/actualizar',{
+                    'nombre': this.nombre,
+                    'descripcion': this.descripcion,
+                    'id': this.categoria_id
+                }).then(function (response) {
+                    me.cerrarModal();
+                    me.listarCategoria();
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            },
+
+
+
             cerrarModal(){
                 this.modal=0;
                 this.tituloModal='';
                 this.nombre='';
                 this.descripcion='';
             },
+
+
+
+            validarCategoria(){
+                this.errorCategoria = 0;
+                this.errorMostrarMsjCategoria = [];
+
+                //Si el nombre esta vacio pushamos el mensaje de error
+                if(!this.nombre)this.errorMostrarMsjCategoria.push("El nombre de la categoría no puedo estar vacio.");
+
+                if(this.errorMostrarMsjCategoria.length) this.errorCategoria = 1;
+
+                return this.errorCategoria;
+            },
+
+
+
             abrirModal(modelo, accion, data = []){
                 switch(modelo){
                     case "categoria":
@@ -216,13 +275,24 @@
                             }
                             case 'actualizar':
                             {
+                                //console.log(data);
 
+                                this.modal = 1;
+                                this.tituloModal = 'Actualizar categoría';
+                                this.tipoAccion = 2;
+                                this.categoria_id = data['id'];
+                                this.nombre = data['nombre'];
+                                this.descripcion = data['descripcion'];
+                                break;
                             }
                         }
                     }
                 }
             }
         },
+
+
+
         mounted() {
             this.listarCategoria();
         }
@@ -238,5 +308,13 @@
         opacity: 1 !important;
         position: absolute !important;
         background-color: #3c29297a !important;
+    }
+    .div-error{
+        display: flex;
+        justify-content: center;
+    }
+    .text-error{
+        color:red !important;
+        font-weight: bold;
     }
 </style>
