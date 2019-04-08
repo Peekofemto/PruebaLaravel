@@ -71,23 +71,14 @@
                     </table>
                     <nav>
                         <ul class="pagination">
-                            <li class="page-item">
-                                <a class="page-link" href="#">Ant</a>
+                            <li class="page-item" v-if="pagination.current_page > 1">
+                                <a class="page-link" href="#" @click.prevent="cambiarPagina(pagination.current_page -1)">Ant</a>
                             </li>
-                            <li class="page-item active">
-                                <a class="page-link" href="#">1</a>
+                            <li class="page-item" v-for="page in pagesNumber" :key="page" :class="[page == isActived ? 'active': '']">
+                                <a class="page-link" href="#" @click.prevent="cambiarPagina(page)" v-text="page"></a>
                             </li>
-                            <li class="page-item">
-                                <a class="page-link" href="#">2</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="#">3</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="#">4</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="#">Sig</a>
+                            <li class="page-item" v-if="pagination.current_page < pagination.last_page">
+                                <a class="page-link" href="#" @click.prevent="cambiarPagina(pagination.current_page + 1)">Sig</a>
                             </li>
                         </ul>
                     </nav>
@@ -155,17 +146,58 @@
                 tituloModal : '',
                 tipoAccion : 0,
                 errorCategoria : 0,
-                errorMostrarMsjCategoria : []
+                errorMostrarMsjCategoria : [],
+                pagination : {
+                    'total' : 0,
+                    'current_page' : 0,
+                    'per_page' : 0,
+                    'last_page' : 0,
+                    'from' : 0,
+                    'to' : 0
+                },
+                offset : 3
+            }
+        },
+        computed:{
+            isActived: function(){
+                return this.pagination.current_page;
+            },
+            //Calcula los elementos de la paginacion
+            pagesNumber: function() {
+                if(!this.pagination.to) {
+                    return [];
+                }
+                
+                var from = this.pagination.current_page - this.offset; 
+                if(from < 1) {
+                    from = 1;
+                }
+
+                var to = from + (this.offset * 2); 
+                if(to >= this.pagination.last_page){
+                    to = this.pagination.last_page;
+                }  
+
+                var pagesArray = [];
+                while(from <= to) {
+                    pagesArray.push(from);
+                    from++;
+                }
+                return pagesArray;             
+
             }
         },
         methods : {
             //'categoria' es la route que nos regresa las categorias
-            listarCategoria (){
+            listarCategoria (page){
 
                 let me = this;
-                axios.get('/categoria').then(function (response) {
+                var url = '/categoria?page=' + page;
+                axios.get(url).then(function (response) {
                     // handle success
-                    me.arrayCategoria = response.data;
+                    var respuesta = response.data;
+                    me.arrayCategoria = respuesta.categorias.data;
+                    me.pagination = respuesta.pagination;
                     console.log(response);
                 })
                 .catch(function (error) {
@@ -175,6 +207,14 @@
             },
 
 
+
+            cambiarPagina(page){
+                let me = this;
+                //Actualiza la pagina actual
+                me.pagination.current_page = page;
+                //Envia la peticion para visualizar la data de esa pagina
+                me.listarCategoria(page);
+            },
 
 
             registrarCategoria(){
@@ -195,7 +235,6 @@
                     console.log(error);
                 });           
             },
-
 
 
 
@@ -227,43 +266,99 @@
                 this.nombre='';
                 this.descripcion='';
             },
+        
+
 
             desactivarCategoria(id){
                 const swalWithBootstrapButtons = Swal.mixin({
-  customClass: {
-    confirmButton: 'btn btn-success',
-    cancelButton: 'btn btn-danger'
-  },
-  buttonsStyling: false,
-})
+                    customClass: {
+                        confirmButton: 'btn btn-success',
+                        cancelButton: 'btn btn-danger'
+                    },
+                        buttonsStyling: false,
+                    })
 
-swalWithBootstrapButtons.fire({
-  title: 'Are you sure?',
-  text: "You won't be able to revert this!",
-  type: 'warning',
-  showCancelButton: true,
-  confirmButtonText: 'Yes, delete it!',
-  cancelButtonText: 'No, cancel!',
-  reverseButtons: true
-}).then((result) => {
-  if (result.value) {
-    swalWithBootstrapButtons.fire(
-      'Deleted!',
-      'Your file has been deleted.',
-      'success'
-    )
-  } else if (
-    // Read more about handling dismissals
-    result.dismiss === Swal.DismissReason.cancel
-  ) {
-    swalWithBootstrapButtons.fire(
-      'Cancelled',
-      'Your imaginary file is safe :)',
-      'error'
-    )
-  }
-})
+                    swalWithBootstrapButtons.fire({
+                        title: 'Estás seguro que quieres desactivar este registro?',
+                        type: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Aceptar',
+                        cancelButtonText: 'Cancelar',
+                        reverseButtons: true
+                    }).then((result) => {
+                    if (result.value) {
+
+                        let me = this;
+
+                        axios.put('/categoria/desactivar',{
+                            'id': id
+                        }).then(function (response) {
+                            me.listarCategoria(me.pagination.current_page);
+                            swalWithBootstrapButtons.fire(
+                                'Desactivado!',
+                                'El registro ha sido desactivado con éxito.',
+                                'success'
+                        )
+                        }).catch(function (error) {
+                            console.log(error);
+                        });
+
+
+                    } else if (
+                        // Read more about handling dismissals
+                        result.dismiss === Swal.DismissReason.cancel
+                    ) {
+
+                    }
+                    })
             },
+
+
+
+            activarCategoria(id){
+                const swalWithBootstrapButtons = Swal.mixin({
+                    customClass: {
+                        confirmButton: 'btn btn-success',
+                        cancelButton: 'btn btn-danger'
+                    },
+                        buttonsStyling: false,
+                    })
+
+                    swalWithBootstrapButtons.fire({
+                        title: 'Estás seguro que quieres activar este registro?',
+                        type: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Aceptar',
+                        cancelButtonText: 'Cancelar',
+                        reverseButtons: true
+                    }).then((result) => {
+                    if (result.value) {
+
+                        let me = this;
+
+                        axios.put('/categoria/activar',{
+                            'id': id
+                        }).then(function (response) {
+                            me.listarCategoria(me.pagination.current_page);
+                            swalWithBootstrapButtons.fire(
+                                'Activado!',
+                                'El registro ha sido activado con éxito.',
+                                'success'
+                        )
+                        }).catch(function (error) {
+                            console.log(error);
+                        });
+
+
+                    } else if (
+                        // Read more about handling dismissals
+                        result.dismiss === Swal.DismissReason.cancel
+                    ) {
+
+                    }
+                 })
+            },
+
 
 
             validarCategoria(){
