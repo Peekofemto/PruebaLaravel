@@ -16,8 +16,17 @@ class CategoriaController extends Controller
     {
         //Si no es un request de ajax no hacemos nada por seguridad
         if(!$request->ajax()) return redirect('/');
-        //Creando un array de tipo Categoria(model)
-        $categorias = Categoria::paginate(3);
+
+        $buscar = $request->buscar;
+        $criterio = $request->criterio;
+
+        if ($buscar=='') {
+            //Creando un array de tipo Categoria(model)
+            $categorias = Categoria::orderBy('id', 'desc')->paginate(4);
+        }
+        else {
+            $categorias = Categoria::where($criterio, 'like', '%' . $buscar . '%' )->orderBy('id', 'desc')->paginate(4);
+        }
 
         return[
             'pagination' => [
