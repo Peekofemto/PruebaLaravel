@@ -46,12 +46,12 @@
                                     <i class="icon-pencil"></i>
                                     </button> &nbsp;
                                         <template v-if="articulo.condicion">
-                                            <button type="button" class="btn btn-danger btn-sm" @click="desactivarCategoria(articulo.id)">
+                                            <button type="button" class="btn btn-danger btn-sm" @click="desactivarArticulo(articulo.id)">
                                                 <i class="icon-trash"></i>
                                             </button>
                                         </template>
                                         <template v-else>
-                                            <button type="button" class="btn btn-info btn-sm" @click="activarCategoria(articulo.id)">
+                                            <button type="button" class="btn btn-info btn-sm" @click="activarArticulo(articulo.id)">
                                                 <i class="icon-check"></i>
                                             </button>
                                         </template>
@@ -105,7 +105,7 @@
                     <div class="modal-body">
                         <form action="" method="post" enctype="multipart/form-data" class="form-horizontal">
                             <div class="form-group row">
-                                <label class="col-md-3 form-control-label" for="text-input">Categoria</label>
+                                <label class="col-md-3 form-control-label" for="text-input">Categoria*</label>
                                 <div class="col-md-9">
                                     <select class="form-control" v-model="idcategoria">
                                         <option value="0" disabled>Seleccione</option>
@@ -118,34 +118,36 @@
                                 <label class="col-md-3 form-control-label" for="text-input">Código</label>
                                 <div class="col-md-9">
                                     <input type="text" v-model="codigo" class="form-control" placeholder="Código de barras">
-                                    
+                                    <barcode v-bind:value="codigo" :options="{ format: 'EAN-13'}">
+                                        Generando código de barras...
+                                    </barcode>
                                 </div>
                             </div>
                             <div class="form-group row">
-                                <label class="col-md-3 form-control-label" for="text-input">Nombre</label>
+                                <label class="col-md-3 form-control-label" for="text-input">Nombre*</label>
                                 <div class="col-md-9">
                                     <input type="text" v-model="nombre" class="form-control" placeholder="Nombre de articulo">
                                     
                                 </div>
                             </div>
                             <div class="form-group row">
-                                <label class="col-md-3 form-control-label" for="text-input">Precio de venta</label>
+                                <label class="col-md-3 form-control-label" for="text-input">Precio de venta*</label>
                                 <div class="col-md-9">
                                     <input type="text" v-model="precio_venta" class="form-control" placeholder="">
                                     
                                 </div>
                             </div>
                             <div class="form-group row">
-                                <label class="col-md-3 form-control-label" for="text-input">Stock</label>
+                                <label class="col-md-3 form-control-label" for="text-input">Stock*</label>
                                 <div class="col-md-9">
                                     <input type="text" v-model="stock" class="form-control" placeholder="">
                                     
                                 </div>
                             </div>
                             <div class="form-group row">
-                                <label class="col-md-3 form-control-label" for="email-input">Descripción</label>
+                                <label class="col-md-3 form-control-label" for="text-input">Descripción</label>
                                 <div class="col-md-9">
-                                    <input type="email" v-model="descripcion" class="form-control" placeholder="Ingrese descripción">
+                                    <input type="text" v-model="descripcion" class="form-control" placeholder="Ingrese descripción">
                                 </div>
                             </div>
                             <div v-show="errorArticulo" class="form-group row div-error">
@@ -157,8 +159,8 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" @click="cerrarModal()">Cerrar</button>
-                        <button type="button" v-if="tipoAccion==1" class="btn btn-primary" @click="registrarCategoria()">Guardar</button>
-                        <button type="button" v-if="tipoAccion==2" class="btn btn-primary" @click="actualizarCategoria()">Actualizar</button>
+                        <button type="button" v-if="tipoAccion==1" class="btn btn-primary" @click="registrarArticulo()">Guardar</button>
+                        <button type="button" v-if="tipoAccion==2" class="btn btn-primary" @click="actualizarArticulo()">Actualizar</button>
                     </div>
                 </div>
                 <!-- /.modal-content -->
@@ -172,6 +174,7 @@
 </template>
 
 <script>
+    import VueBarcode from 'vue-barcode';
     export default {
         data (){
             return{
@@ -202,6 +205,9 @@
                 buscar : '',
                 arrayCategoria : []
             }
+        },
+        components: {
+            'barcode': VueBarcode
         },
         computed:{
             isActived: function(){
@@ -282,20 +288,24 @@
             },
 
 
-            registrarCategoria(){
+            registrarArticulo(){
 
-                if(this.validarCategoria()){
+                if(this.validarArticulo()){
                     return;
                 }
 
                 let me = this;
                 //esta ruta hace referencia a la funcion store del CategoriaController
-                axios.post('/categoria/registrar',{
+                axios.post('/articulo/registrar',{
+                    'idcategoria' : this.idcategoria,
+                    'codigo' : this.codigo,
                     'nombre' : this.nombre,
+                    'stock' : this.stock,
+                    'precio_venta' : this.precio_venta,
                     'descripcion' : this.descripcion
                 }).then(function(response) {
                     me.cerrarModal();
-                    me.listarCategoria(1, '', 'nombre');
+                    me.listarArticulo(1, '', 'nombre');
                 }).catch(function(error){
                     console.log(error);
                 });           
@@ -303,21 +313,25 @@
 
 
 
-            actualizarCategoria(){
+            actualizarArticulo(){
 
-               if (this.validarCategoria()){
+               if (this.validarArticulo()){
                     return;
                 }
                 
                 let me = this;
 
-                axios.put('/categoria/actualizar',{
-                    'nombre': this.nombre,
-                    'descripcion': this.descripcion,
-                    'id': this.categoria_id
+                axios.put('/articulo/actualizar',{
+                    'idcategoria' : this.idcategoria,
+                    'codigo' : this.codigo,
+                    'nombre' : this.nombre,
+                    'stock' : this.stock,
+                    'precio_venta' : this.precio_venta,
+                    'descripcion' : this.descripcion,
+                    'id': this.articulo_id
                 }).then(function (response) {
                     me.cerrarModal();
-                    me.listarCategoria(1, '', 'nombre');
+                    me.listarArticulo(1, '', 'nombre');
                 }).catch(function (error) {
                     console.log(error);
                 });
@@ -326,15 +340,21 @@
 
 
             cerrarModal(){
-                this.modal=0;
-                this.tituloModal='';
-                this.nombre='';
-                this.descripcion='';
+                this.modal = 0;
+                this.tituloModal = '';
+                this.idcategoria = 0;
+                this.nombre_categoria = '';
+                this.codigo = '';
+                this.nombre = '';
+                this.precio_venta = 0;
+                this.stock = 0;
+                this.descripcion = '';
+                this.errorArticulo = 0;
             },
         
 
 
-            desactivarCategoria(id){
+            desactivarArticulo(id){
                 const swalWithBootstrapButtons = Swal.mixin({
                     customClass: {
                         confirmButton: 'btn btn-success',
@@ -344,7 +364,7 @@
                     })
 
                     swalWithBootstrapButtons.fire({
-                        title: 'Estás seguro que quieres desactivar este registro?',
+                        title: 'Estás seguro que quieres desactivar este articulo?',
                         type: 'warning',
                         showCancelButton: true,
                         confirmButtonText: 'Aceptar',
@@ -355,10 +375,10 @@
 
                         let me = this;
 
-                        axios.put('/categoria/desactivar',{
+                        axios.put('/articulo/desactivar',{
                             'id': id
                         }).then(function (response) {
-                            me.listarCategoria(1, '', 'nombre');
+                            me.listarArticulo(1, '', 'nombre');
                             swalWithBootstrapButtons.fire(
                                 'Desactivado!',
                                 'El registro ha sido desactivado con éxito.',
@@ -380,7 +400,7 @@
 
 
 
-            activarCategoria(id){
+            activarArticulo(id){
                 const swalWithBootstrapButtons = Swal.mixin({
                     customClass: {
                         confirmButton: 'btn btn-success',
@@ -401,10 +421,10 @@
 
                         let me = this;
 
-                        axios.put('/categoria/activar',{
+                        axios.put('/articulo/activar',{
                             'id': id
                         }).then(function (response) {
-                            me.listarCategoria(1, '', 'nombre');
+                            me.listarArticulo(1, '', 'nombre');
                             swalWithBootstrapButtons.fire(
                                 'Activado!',
                                 'El registro ha sido activado con éxito.',
@@ -426,16 +446,20 @@
 
 
 
-            validarCategoria(){
-                this.errorCategoria = 0;
-                this.errorMostrarMsjCategoria = [];
+            validarArticulo(){
+                this.errorArticulo = 0;
+                this.errorMostrarMsjArticulo = [];
 
+                //Si no se selcciona una categoria nos tira el error
+                if(this.idcategoria==0) this.errorMostrarMsjArticulo.push("Seleccione una categoria");
                 //Si el nombre esta vacio pushamos el mensaje de error
-                if(!this.nombre)this.errorMostrarMsjCategoria.push("El nombre de la categoría no puedo estar vacio.");
+                if(!this.nombre) this.errorMostrarMsjArticulo.push("El nombre de la articulo no puedo estar vacio.");  
+                if(!this.stock) this.errorMostrarMsjArticulo.push("El stock del articulo debe der ser número y no puede estar vacio");
+                if(!this.precio_venta) this.errorMostrarMsjArticulo.push("El precio de venta del articulo debe ser un número y no debe estar vacio");
 
-                if(this.errorMostrarMsjCategoria.length) this.errorCategoria = 1;
+                if(this.errorMostrarMsjArticulo.length) this.errorArticulo = 1;
 
-                return this.errorCategoria;
+                return this.errorArticulo;
             },
 
 
@@ -449,7 +473,12 @@
                             {
                                 this.modal = 1;
                                 this.tituloModal = 'Registrar Articulo';
+                                this.idcategoria = 0;
+                                this.nombre_categoria = '';
+                                this.codigo = '';
                                 this.nombre = '';
+                                this.precio_venta = 0;
+                                this.stock = 0;
                                 this.descripcion = '';
                                 this.tipoAccion = 1;
                                 break;
@@ -461,8 +490,12 @@
                                 this.modal = 1;
                                 this.tituloModal = 'Actualizar Articulo';
                                 this.tipoAccion = 2;
-                                this.categoria_id = data['id'];
+                                this.articulo_id = data['id'];
+                                this.idcategoria = data['idcategoria'];
+                                this.codigo = data['codigo'];
                                 this.nombre = data['nombre'];
+                                this.stock = data['stock'];
+                                this.precio_venta = data['precio_venta'];
                                 this.descripcion = data['descripcion'];
                                 break;
                             }
